@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3D Sprite Sheet Builder</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="layout">
+
+    <div id="controls">
+        <h1>Sprite Sheet Builder</h1>
+
+        <section>
+            <h2>Subject</h2>
+            <label>Character
+                <select id="character"></select>
+            </label>
+            <label>Clip
+                <select id="clip"></select>
+            </label>
+            <label class="check">
+                <input type="checkbox" id="skipHands" checked>
+                Skip hand bones on retarget
+            </label>
+            <p class="hint">Several imported characters have malformed hand bones;
+               skipping them leaves the hands in their rest pose instead of exploding.</p>
+        </section>
+
+        <section>
+            <h2>Camera</h2>
+            <label>Yaw <output id="yawOut">0</output>&deg;
+                <input type="range" id="yaw" min="-180" max="180" step="5" value="0">
+            </label>
+            <label>Pitch <output id="pitchOut">8</output>&deg;
+                <input type="range" id="pitch" min="-45" max="60" step="1" value="8">
+            </label>
+            <label>Ortho height <output id="orthoOut">4.0</output> units
+                <input type="range" id="ortho" min="0.5" max="12" step="0.1" value="4">
+            </label>
+            <label class="check">
+                <input type="checkbox" id="autoFit" checked>
+                Auto-fit the clip before capture
+            </label>
+            <label class="check">
+                <input type="checkbox" id="flatLight" checked>
+                Flat lighting
+            </label>
+        </section>
+
+        <section>
+            <h2>Sampling</h2>
+            <label>Frames <output id="framesOut">12</output>
+                <input type="range" id="frames" min="1" max="48" step="1" value="12">
+            </label>
+            <div class="row">
+                <label>Range start
+                    <input type="number" id="rangeStart" min="0" max="1" step="0.01" value="0">
+                </label>
+                <label>Range end
+                    <input type="number" id="rangeEnd" min="0" max="1" step="0.01" value="1">
+                </label>
+            </div>
+            <label class="check">
+                <input type="checkbox" id="loops" checked>
+                Clip loops (drop the duplicate last frame)
+            </label>
+        </section>
+
+        <section>
+            <h2>Output</h2>
+            <label>Render size
+                <select id="resolution">
+                    <option value="256">256 x 256</option>
+                    <option value="384">384 x 384</option>
+                    <option value="512" selected>512 x 512</option>
+                    <option value="768">768 x 768</option>
+                    <option value="1024">1024 x 1024</option>
+                </select>
+            </label>
+            <div class="row">
+                <label>Columns
+                    <input type="number" id="columns" min="1" max="16" step="1" value="6">
+                </label>
+                <label>Padding px
+                    <input type="number" id="padding" min="0" max="64" step="1" value="8">
+                </label>
+            </div>
+            <label class="check">
+                <input type="checkbox" id="lockVertical" checked>
+                Lock vertical too (full centre-of-mass lock)
+            </label>
+            <p class="hint">Off keeps falls and jumps visible in the cell.
+               Either way the removed travel is recorded in the JSON.</p>
+        </section>
+
+        <section>
+            <button id="capture" class="primary">Capture sheet</button>
+            <div id="downloads" class="hidden">
+                <button id="dlBeauty">Download beauty PNG</button>
+                <button id="dlBones">Download bone-map PNG</button>
+                <button id="dlJson">Download JSON</button>
+            </div>
+        </section>
+
+        <section>
+            <h2>Bone map legend</h2>
+            <div id="legend"></div>
+        </section>
+    </div>
+
+    <div id="stage">
+        <div id="viewport">
+            <canvas id="render"></canvas>
+        </div>
+        <div id="status">Loading Babylon...</div>
+
+        <div id="playback" class="hidden">
+            <div class="playbackHead">
+                <h3>Animation preview</h3>
+                <div class="segmented">
+                    <button id="passBeauty" class="on">Beauty</button>
+                    <button id="passBones">Bone map</button>
+                </div>
+            </div>
+            <div class="playbackStage"><canvas id="playbackCanvas"></canvas></div>
+            <div class="transport">
+                <button id="playPause" class="icon">Pause</button>
+                <button id="stepBack" class="icon">&lt;</button>
+                <button id="stepFwd" class="icon">&gt;</button>
+                <input type="range" id="scrub" min="0" max="0" step="1" value="0">
+                <span id="frameLabel" class="mono">-</span>
+            </div>
+            <div class="transport">
+                <label class="check">
+                    <input type="checkbox" id="reconstruct" checked>
+                    Replay travel from JSON
+                </label>
+                <label class="check">
+                    <input type="checkbox" id="showPath">
+                    Show anchor path
+                </label>
+                <label class="speed">Speed <output id="speedOut">1.0</output>x
+                    <input type="range" id="speed" min="0.1" max="2" step="0.1" value="1">
+                </label>
+            </div>
+            <p class="hint" id="playbackNote"></p>
+        </div>
+
+        <div id="preview">
+            <div class="previewPane">
+                <h3>Beauty pass</h3>
+                <div class="sheetBox"><canvas id="outBeauty"></canvas></div>
+            </div>
+            <div class="previewPane">
+                <h3>Bone map</h3>
+                <div class="sheetBox"><canvas id="outBones"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="lib/babylon.js"></script>
+<script src="lib/babylonjs.loaders.min.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/boneColor.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/loader.js"></script>
+<script src="js/capture.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

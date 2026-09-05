@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node (if tooling is added later)
+node_modules/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+*.orig
+*~
+
+# Model assets - not redistributable (Mixamo / Meshy AI terms), see models/README.md
+models/*
+!models/README.md
+
+# Generated sprite sheet output
+output/
+exports/
+sheets/
+*.sheet.png
+*.sheet.json
+
+# Local config / secrets
+.env
+.env.local

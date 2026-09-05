@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sprite Sheet Builder - self test</title>
+<style>
+    body { margin: 0; padding: 12px; background: #16181d; color: #d8dbe2;
+           font: 12px/1.4 system-ui, sans-serif; }
+    pre { background: #1d2027; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+    pre.fail { color: #f0a0a0; border-left: 3px solid #e05252; }
+    canvas.sheet { background: repeating-conic-gradient(#2a2d34 0% 25%, #23262c 0% 50%)
+                   50% / 16px 16px; border: 1px solid #2c313b; max-width: 100%; }
+    h2 { font-size: 12px; color: #7d8598; margin: 12px 0 4px; }
+    #render { position: absolute; left: -9999px; top: 0; }
+</style>
+</head>
+<body>
+
+<canvas id="render"></canvas>
+<pre id="report">running...</pre>
+<h2>Beauty pass</h2><canvas id="a" class="sheet"></canvas>
+<h2>Bone map</h2><canvas id="b" class="sheet"></canvas>
+
+<script src="lib/babylon.js"></script>
+<script src="lib/babylonjs.loaders.min.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/boneColor.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/loader.js"></script>
+<script src="js/capture.js"></script>
+<script>
+/**
+ * Headless smoke test. Runs the whole pipeline with no UI interaction and
+ * draws both sheets, so a screenshot shows whether the output is correct
+ * rather than merely error-free. Ends the report with PASS or FAIL.
+ *
+ * Query params: ?character=<index>&clip=<index>&yaw=<deg>&frames=<n>
+ *
+ * Drive it headlessly with a CDP client that waits for PASS/FAIL in #report;
+ * Chrome's --screenshot flag fires on the load event, long before the async
+ * model load finishes, so it is not usable here.
+ */
+const log = [];
+function say(s) {
+    log.push(s);
+    document.getElementById('report').textContent = log.join('\n');
+}
+
+(async () => {
+    try {
+        const q = new URLSearchParams(location.search);
+        const character = CHARACTERS[+(q.get('character') || 0)];
+        const clipDef = CLIPS[+(q.get('clip') || 4)];
+        const yaw = +(q.get('yaw') || 0);
+        const frameCount = +(q.get('frames') || 8);
+
+        const t0 = performance.now();
+        const ms = () => ((performance.now() - t0) / 1000).toFixed(1) + 's';
+
+        await Rig.init(document.getElementById('render'));
+        Rig.setResolution(384, 384);
+        Rig.setAngles(yaw, 8);
+        Rig.setOrthoHeight(4);
+        Rig.setFlatLighting(true);
+        Loader.init(Rig.scene);
+        say('rig ok, engine=' + Rig.engine.description);
+
+        const flat = BoneColor.createFlatMaterial(Rig.scene);
+
+        const model = await Loader.loadCharacter(MODEL_DIR + character.file);
+        say(`model "${character.name}": ${model.geoMeshes.length} geo mesh(es), ` +
+            `${model.skeleton.bones.length} bones, anchor=${model.anchorNode.boneName}`);
+
+        const baked = BoneColor.bake(model.geoMeshes, model.skeleton);
+        say(`bake: ${baked.vertexCount} vertices, unmatched bones=` +
+            (baked.unmatched.length ? baked.unmatched.join(',') : 'none'));
+
+        const clip = await Loader.loadClip(MODEL_DIR + clipDef.file, /^(Left|Right)Hand./i);
+        say(`clip "${clipDef.name}": frames ${clip.from.toFixed(0)}-${clip.to.toFixed(0)} ` +
+            `@${clip.fps}fps, ${clip.retargeted} retargeted, ${clip.missed.length} unmatched`);
+
+        const opts = {
+            yaw, pitch: 8, frameCount,
+            rangeStart: 0, rangeEnd: 1, loops: true,
+            columns: 4, padding: 8,
+            lockVertical: true, autoFit: true,
+        };
+        const result = await Capture.run(opts, {
+            clip, flatMaterial: flat,
+            characterName: character.name, characterFile: character.file,
+            clipName: clipDef.name, clipFile: clipDef.file,
+        }, (i, n) => say(`[${ms()}] frame ${i + 1}/${n}`));
+
+        const m = result.meta;
+        say(`capture: cell ${m.cell.width}x${m.cell.height}, ` +
+            `sheet ${m.sheet.width}x${m.sheet.height}, ` +
+            `ortho=${m.camera.orthoHeightUnits.toFixed(2)} units, ` +
+            `ppu=${m.camera.pixelsPerUnit.toFixed(1)}`);
+
+        // The travel the centre-of-mass lock removed, which the JSON restores.
+        const last = m.frames[m.frames.length - 1];
+        say(`frame 0 anchor=${JSON.stringify(m.frames[0].anchor)}  ` +
+            `last frame rootOffsetPx=${JSON.stringify(last.rootOffsetPx)}  ` +
+            `rootOffsetWorld=${JSON.stringify(last.rootOffsetWorld)}`);
+
+        for (const [id, key] of [['a', 'beauty'], ['b', 'bones']]) {
+            const dst = document.getElementById(id);
+            dst.width = result[key].width;
+            dst.height = result[key].height;
+            dst.getContext('2d').drawImage(result[key], 0, 0);
+        }
+        say('PASS');
+    } catch (e) {
+        document.getElementById('report').className = 'fail';
+        say('FAIL: ' + e.message + '\n' + (e.stack || ''));
+    }
+})();
+</script>
+</body>
+</html>
