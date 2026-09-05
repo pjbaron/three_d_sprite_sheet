@@ -126,13 +126,33 @@ once into the mesh's vertex colour buffer. Babylon's normal skinning then
 carries the colours through the animation, so the two passes align exactly.
 
 The palette is defined in `js/boneColor.js` as ordered regex rules over bone
-names, covering both supported rig conventions. Warm ramp for the character's left arm, cool for the right, green
-for the left leg, magenta for the right, with hands and feet as the bright
-highlights. Bones matching no rule come out mid grey, and the UI reports them.
+names, covering both supported rig conventions. Warm ramp for the character's
+left arm, cool for the right, green for the left leg, magenta for the right,
+with hands and feet as the bright highlights. Bones matching no rule come out mid grey, and the UI reports them.
 
 Colours are written to the vertex buffer in linear space, because the unlit PBR
 pass converts back to sRGB on output. The sheet therefore carries the exact RGB
-values shown in the legend.
+values below - sample a pixel and it will match to the byte.
+
+![Bone map colour legend](docs/bone_legend.png)
+
+| region | left | right |
+| --- | --- | --- |
+| shoulder | `#8C400D` | `#0D5261` |
+| upper arm | `#D9610D` | `#1A8C9E` |
+| forearm | `#FF9926` | `#40D1EB` |
+| hand | `#FF2121` | `#1A73FF` |
+| thigh | `#1A6B2E` | `#730F57` |
+| shin | `#33B847` | `#D1269E` |
+| foot | `#8CFF33` | `#FF73D9` |
+
+Head is `#FAEB9E`, torso `#8C6BC7`, and any bone matching no rule is `#808080`.
+Both rig conventions map to the same colours, so a Mixamo-named figure and an
+Unreal-named one produce interchangeable bone maps.
+
+The legend image is generated from `js/boneColor.js` rather than maintained by
+hand - rerun `python tools/make_bone_legend.py` after changing a colour, and it
+will fail loudly if the two rig conventions ever disagree.
 
 ## JSON format
 
@@ -234,6 +254,7 @@ The README image was made with:
                     see models/README.md
     tools/prepare_models.py  rescan models/ and regenerate the catalogue
     tools/sheet_to_gif.py    turn a captured sheet plus its JSON into a GIF
+    tools/make_bone_legend.py  redraw docs/bone_legend.png from the palette
     docs/           README images
 
 ## Gotchas worth knowing
