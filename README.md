@@ -9,10 +9,13 @@ Intended as source material for a generative image model: the beauty pass gives
 the character, the bone map removes every ambiguity about which limb is which
 (left vs right, hand vs forearm) even when the pose self-occludes.
 
-![MMA kick, 16 frames captured from a 60fps clip](docs/example_kick.gif)
+![MMA kick, beauty pass](docs/example_kick.gif) ![the same frames as a bone map](docs/example_kick_bones.gif)
 
-Sixteen frames of one clip, packed 8x2 and played back from the sheet at the
-timings in the JSON, via `tools/sheet_to_gif.py`.
+The two passes from one capture: sixteen frames of a kick, packed 8x2 and
+played back from the sheet at the timings in the JSON. Same poses, same cells -
+the bone map just says which limb is which, so a left hand crossing the body
+is still unmistakably a left hand. Both GIFs were made with
+`tools/sheet_to_gif.py`.
 
 ## Adding models
 
@@ -253,3 +256,11 @@ pass uses `PBRMaterial.unlit` instead.
 "skip hand bones" option leaves them in their rest pose rather than letting the
 retargeted animation deform them into a mess. Turn it off for characters whose
 hands are clean.
+
+## The interface
+
+![The tool mid-session: controls on the left, live render and playback on the right](docs/browser_view.jpg)
+
+Controls run down the left in the order you use them - subject, camera,
+sampling, output - and the right column is the live render, the status line
+from the last capture, and the playback preview driven from the sheet itself.
